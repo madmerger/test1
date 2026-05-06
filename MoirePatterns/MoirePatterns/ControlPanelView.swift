@@ -45,7 +45,7 @@ struct ControlPanelView: View {
                     Text(mode.rawValue).tag(mode)
                 }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
             .onChange(of: viewModel.patternMode) { _, _ in
                 viewModel.reset()
             }
@@ -65,7 +65,7 @@ struct ControlPanelView: View {
             }
             .pickerStyle(.segmented)
 
-            if viewModel.patternMode == .lines {
+            if viewModel.supportsAngle {
                 Picker("Drag Mode", selection: $viewModel.dragMode) {
                     ForEach(MoireViewModel.DragMode.allCases, id: \.self) { mode in
                         Text(mode.rawValue).tag(mode)
@@ -90,20 +90,22 @@ struct ControlPanelView: View {
             }
 
             parameterSlider(
-                label: "Spacing",
+                label: spacingLabel,
                 value: $viewModel.layer1Spacing,
-                range: 2...30,
+                range: spacingRange,
                 format: "%.1f px"
             )
 
-            parameterSlider(
-                label: "Thickness",
-                value: $viewModel.layer1Thickness,
-                range: 0.5...15,
-                format: "%.1f px"
-            )
+            if showsThickness {
+                parameterSlider(
+                    label: thicknessLabel,
+                    value: $viewModel.layer1Thickness,
+                    range: thicknessRange,
+                    format: "%.1f px"
+                )
+            }
 
-            if viewModel.patternMode == .lines {
+            if viewModel.supportsAngle {
                 parameterSlider(
                     label: "Angle",
                     value: $viewModel.layer1Angle,
@@ -130,20 +132,22 @@ struct ControlPanelView: View {
             }
 
             parameterSlider(
-                label: "Spacing",
+                label: spacingLabel,
                 value: $viewModel.layer2Spacing,
-                range: 2...30,
+                range: spacingRange,
                 format: "%.1f px"
             )
 
-            parameterSlider(
-                label: "Thickness",
-                value: $viewModel.layer2Thickness,
-                range: 0.5...15,
-                format: "%.1f px"
-            )
+            if showsThickness {
+                parameterSlider(
+                    label: thicknessLabel,
+                    value: $viewModel.layer2Thickness,
+                    range: thicknessRange,
+                    format: "%.1f px"
+                )
+            }
 
-            if viewModel.patternMode == .lines {
+            if viewModel.supportsAngle {
                 parameterSlider(
                     label: "Angle",
                     value: $viewModel.layer2Angle,
@@ -154,6 +158,50 @@ struct ControlPanelView: View {
 
             ColorPicker("Color", selection: $viewModel.layer2Color)
         }
+    }
+
+    // MARK: - Mode-specific labels and ranges
+
+    private var spacingLabel: String {
+        switch viewModel.patternMode {
+        case .checkerboard:
+            return "Cell Size"
+        case .dots:
+            return "Spacing"
+        default:
+            return "Spacing"
+        }
+    }
+
+    private var spacingRange: ClosedRange<Double> {
+        switch viewModel.patternMode {
+        case .checkerboard:
+            return 3...40
+        default:
+            return 2...30
+        }
+    }
+
+    private var thicknessLabel: String {
+        switch viewModel.patternMode {
+        case .dots:
+            return "Dot Radius"
+        default:
+            return "Thickness"
+        }
+    }
+
+    private var thicknessRange: ClosedRange<Double> {
+        switch viewModel.patternMode {
+        case .dots:
+            return 0.5...10
+        default:
+            return 0.5...15
+        }
+    }
+
+    private var showsThickness: Bool {
+        viewModel.patternMode != .checkerboard
     }
 
     // MARK: - Presets
@@ -168,6 +216,14 @@ struct ControlPanelView: View {
                 linePresets
             case .circles:
                 circlePresets
+            case .grid:
+                gridPresets
+            case .radial:
+                radialPresets
+            case .dots:
+                dotPresets
+            case .checkerboard:
+                checkerPresets
             }
 
             Button("Reset All") {
@@ -180,21 +236,12 @@ struct ControlPanelView: View {
     private var linePresets: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                presetButton("Classic") {
-                    viewModel.applyLinePresetClassic()
-                }
-                presetButton("Fine") {
-                    viewModel.applyLinePresetFine()
-                }
+                presetButton("Classic") { viewModel.applyLinePresetClassic() }
+                presetButton("Fine") { viewModel.applyLinePresetFine() }
             }
-
             HStack(spacing: 8) {
-                presetButton("Angled") {
-                    viewModel.applyLinePresetAngled()
-                }
-                presetButton("Wide") {
-                    viewModel.applyLinePresetWide()
-                }
+                presetButton("Angled") { viewModel.applyLinePresetAngled() }
+                presetButton("Wide") { viewModel.applyLinePresetWide() }
             }
         }
     }
@@ -202,21 +249,64 @@ struct ControlPanelView: View {
     private var circlePresets: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                presetButton("Classic") {
-                    viewModel.applyCirclePresetClassic()
-                }
-                presetButton("Dense") {
-                    viewModel.applyCirclePresetDense()
-                }
+                presetButton("Classic") { viewModel.applyCirclePresetClassic() }
+                presetButton("Dense") { viewModel.applyCirclePresetDense() }
             }
-
             HStack(spacing: 8) {
-                presetButton("Offset") {
-                    viewModel.applyCirclePresetOffset()
-                }
-                presetButton("Wide") {
-                    viewModel.applyCirclePresetWide()
-                }
+                presetButton("Offset") { viewModel.applyCirclePresetOffset() }
+                presetButton("Wide") { viewModel.applyCirclePresetWide() }
+            }
+        }
+    }
+
+    private var gridPresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") { viewModel.applyGridPresetClassic() }
+                presetButton("Fine") { viewModel.applyGridPresetFine() }
+            }
+            HStack(spacing: 8) {
+                presetButton("Angled") { viewModel.applyGridPresetAngled() }
+                presetButton("Dense") { viewModel.applyGridPresetDense() }
+            }
+        }
+    }
+
+    private var radialPresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") { viewModel.applyRadialPresetClassic() }
+                presetButton("Dense") { viewModel.applyRadialPresetDense() }
+            }
+            HStack(spacing: 8) {
+                presetButton("Offset") { viewModel.applyRadialPresetOffset() }
+                presetButton("Wide") { viewModel.applyRadialPresetWide() }
+            }
+        }
+    }
+
+    private var dotPresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") { viewModel.applyDotPresetClassic() }
+                presetButton("Fine") { viewModel.applyDotPresetFine() }
+            }
+            HStack(spacing: 8) {
+                presetButton("Angled") { viewModel.applyDotPresetAngled() }
+                presetButton("Dense") { viewModel.applyDotPresetDense() }
+            }
+        }
+    }
+
+    private var checkerPresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") { viewModel.applyCheckerPresetClassic() }
+                presetButton("Fine") { viewModel.applyCheckerPresetFine() }
+            }
+            HStack(spacing: 8) {
+                presetButton("Angled") { viewModel.applyCheckerPresetAngled() }
+                presetButton("Large") { viewModel.applyCheckerPresetLarge() }
             }
         }
     }

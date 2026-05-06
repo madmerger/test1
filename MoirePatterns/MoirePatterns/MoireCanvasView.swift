@@ -68,6 +68,40 @@ struct MoireCanvasView: View {
                 color: color,
                 canvasSize: canvasSize
             )
+        case .grid:
+            GridPatternLayer(
+                spacing: spacing,
+                thickness: thickness,
+                angle: angle,
+                offset: offset,
+                color: color,
+                canvasSize: canvasSize
+            )
+        case .radial:
+            RadialPatternLayer(
+                spacing: spacing,
+                thickness: thickness,
+                offset: offset,
+                color: color,
+                canvasSize: canvasSize
+            )
+        case .dots:
+            DotPatternLayer(
+                spacing: spacing,
+                dotRadius: thickness,
+                angle: angle,
+                offset: offset,
+                color: color,
+                canvasSize: canvasSize
+            )
+        case .checkerboard:
+            CheckerboardPatternLayer(
+                cellSize: spacing,
+                angle: angle,
+                offset: offset,
+                color: color,
+                canvasSize: canvasSize
+            )
         }
     }
 
@@ -192,8 +226,7 @@ struct CirclePatternLayer: View {
             let centerY = size.height / 2 + offset.height
 
             let diagonal = sqrt(size.width * size.width + size.height * size.height)
-            let maxRadius = diagonal
-            let ringCount = Int(maxRadius / totalSpacing) + 1
+            let ringCount = Int(diagonal / totalSpacing) + 1
 
             for i in 0..<ringCount {
                 let outerRadius = Double(i + 1) * totalSpacing
@@ -216,6 +249,174 @@ struct CirclePatternLayer: View {
                     clockwise: true
                 )
                 context.fill(path, with: .color(color))
+            }
+        }
+    }
+}
+
+// MARK: - Grid Pattern
+
+struct GridPatternLayer: View {
+    let spacing: Double
+    let thickness: Double
+    let angle: Double
+    let offset: CGSize
+    let color: Color
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            let totalSpacing = spacing + thickness
+            guard totalSpacing > 0 else { return }
+
+            let diagonal = sqrt(size.width * size.width + size.height * size.height)
+
+            context.translateBy(x: size.width / 2, y: size.height / 2)
+            context.rotate(by: .degrees(angle))
+            context.translateBy(x: offset.width, y: offset.height)
+            context.translateBy(x: -size.width / 2, y: -size.height / 2)
+
+            let start = (size.width - diagonal) / 2
+            let startY = (size.height - diagonal) / 2
+            let count = Int(diagonal / totalSpacing) + 2
+
+            for i in 0..<count {
+                let x = start + Double(i) * totalSpacing
+                let vRect = CGRect(x: x, y: startY, width: thickness, height: diagonal)
+                context.fill(Path(vRect), with: .color(color))
+            }
+
+            for i in 0..<count {
+                let y = startY + Double(i) * totalSpacing
+                let hRect = CGRect(x: start, y: y, width: diagonal, height: thickness)
+                context.fill(Path(hRect), with: .color(color))
+            }
+        }
+    }
+}
+
+// MARK: - Radial Pattern
+
+struct RadialPatternLayer: View {
+    let spacing: Double
+    let thickness: Double
+    let offset: CGSize
+    let color: Color
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            let totalSpacing = spacing + thickness
+            guard totalSpacing > 0.5 else { return }
+
+            let centerX = size.width / 2 + offset.width
+            let centerY = size.height / 2 + offset.height
+
+            let diagonal = sqrt(size.width * size.width + size.height * size.height)
+            let circumference = Double.pi * diagonal
+            let rayCount = Int(circumference / totalSpacing)
+            guard rayCount > 0 else { return }
+
+            let angleStep = 360.0 / Double(rayCount)
+            let angularThickness = angleStep * (thickness / totalSpacing)
+
+            for i in 0..<rayCount {
+                let startAngle = Double(i) * angleStep
+                let endAngle = startAngle + angularThickness
+
+                var path = Path()
+                path.move(to: CGPoint(x: centerX, y: centerY))
+                path.addArc(
+                    center: CGPoint(x: centerX, y: centerY),
+                    radius: diagonal,
+                    startAngle: .degrees(startAngle),
+                    endAngle: .degrees(endAngle),
+                    clockwise: false
+                )
+                path.closeSubpath()
+                context.fill(path, with: .color(color))
+            }
+        }
+    }
+}
+
+// MARK: - Dot Pattern
+
+struct DotPatternLayer: View {
+    let spacing: Double
+    let dotRadius: Double
+    let angle: Double
+    let offset: CGSize
+    let color: Color
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            let cellSize = spacing + dotRadius * 2
+            guard cellSize > 0 else { return }
+
+            let diagonal = sqrt(size.width * size.width + size.height * size.height)
+
+            context.translateBy(x: size.width / 2, y: size.height / 2)
+            context.rotate(by: .degrees(angle))
+            context.translateBy(x: offset.width, y: offset.height)
+            context.translateBy(x: -size.width / 2, y: -size.height / 2)
+
+            let startX = (size.width - diagonal) / 2
+            let startY = (size.height - diagonal) / 2
+            let cols = Int(diagonal / cellSize) + 2
+            let rows = Int(diagonal / cellSize) + 2
+
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    let cx = startX + Double(col) * cellSize + cellSize / 2
+                    let cy = startY + Double(row) * cellSize + cellSize / 2
+                    let dotRect = CGRect(
+                        x: cx - dotRadius,
+                        y: cy - dotRadius,
+                        width: dotRadius * 2,
+                        height: dotRadius * 2
+                    )
+                    context.fill(Path(ellipseIn: dotRect), with: .color(color))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Checkerboard Pattern
+
+struct CheckerboardPatternLayer: View {
+    let cellSize: Double
+    let angle: Double
+    let offset: CGSize
+    let color: Color
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            guard cellSize > 0 else { return }
+
+            let diagonal = sqrt(size.width * size.width + size.height * size.height)
+
+            context.translateBy(x: size.width / 2, y: size.height / 2)
+            context.rotate(by: .degrees(angle))
+            context.translateBy(x: offset.width, y: offset.height)
+            context.translateBy(x: -size.width / 2, y: -size.height / 2)
+
+            let startX = (size.width - diagonal) / 2
+            let startY = (size.height - diagonal) / 2
+            let cols = Int(diagonal / cellSize) + 2
+            let rows = Int(diagonal / cellSize) + 2
+
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    guard (row + col) % 2 == 0 else { continue }
+                    let x = startX + Double(col) * cellSize
+                    let y = startY + Double(row) * cellSize
+                    let rect = CGRect(x: x, y: y, width: cellSize, height: cellSize)
+                    context.fill(Path(rect), with: .color(color))
+                }
             }
         }
     }
