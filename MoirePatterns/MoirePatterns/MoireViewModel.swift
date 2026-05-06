@@ -2,6 +2,9 @@ import SwiftUI
 import Combine
 
 class MoireViewModel: ObservableObject {
+    // Pattern mode
+    @Published var patternMode: PatternMode = .lines
+
     // Layer 1 (base layer) parameters
     @Published var layer1Spacing: Double = 8.0
     @Published var layer1Thickness: Double = 3.0
@@ -22,8 +25,13 @@ class MoireViewModel: ObservableObject {
     @Published var showLayer2: Bool = true
 
     // Interaction state
-    @Published var activeLayer: Int = 2  // Which layer responds to drag (1 or 2)
+    @Published var activeLayer: Int = 2
     @Published var dragMode: DragMode = .translate
+
+    enum PatternMode: String, CaseIterable {
+        case lines = "Lines"
+        case circles = "Circles"
+    }
 
     enum DragMode: String, CaseIterable {
         case translate = "Move"
@@ -31,16 +39,81 @@ class MoireViewModel: ObservableObject {
     }
 
     func reset() {
-        layer1Spacing = 8.0
         layer1Thickness = 3.0
         layer1Angle = 0.0
         layer1Offset = .zero
 
-        layer2Spacing = 8.5
         layer2Thickness = 3.0
         layer2Angle = 0.0
         layer2Offset = .zero
 
         activeLayer = 2
+
+        switch patternMode {
+        case .lines:
+            layer1Spacing = 8.0
+            layer2Spacing = 8.5
+        case .circles:
+            layer1Spacing = 10.0
+            layer2Spacing = 10.5
+        }
+    }
+
+    func applyLinePresetClassic() {
+        patternMode = .lines
+        reset()
+    }
+
+    func applyLinePresetFine() {
+        patternMode = .lines
+        reset()
+        layer1Spacing = 4.0
+        layer1Thickness = 2.0
+        layer2Spacing = 4.3
+        layer2Thickness = 2.0
+    }
+
+    func applyLinePresetAngled() {
+        patternMode = .lines
+        reset()
+        layer2Angle = 5.0
+    }
+
+    func applyLinePresetWide() {
+        patternMode = .lines
+        reset()
+        layer1Spacing = 15.0
+        layer1Thickness = 7.0
+        layer2Spacing = 16.0
+        layer2Thickness = 7.0
+    }
+
+    func applyCirclePresetClassic() {
+        patternMode = .circles
+        reset()
+    }
+
+    func applyCirclePresetDense() {
+        patternMode = .circles
+        reset()
+        layer1Spacing = 5.0
+        layer1Thickness = 2.0
+        layer2Spacing = 5.3
+        layer2Thickness = 2.0
+    }
+
+    func applyCirclePresetOffset() {
+        patternMode = .circles
+        reset()
+        layer2Offset = CGSize(width: 30, height: 0)
+    }
+
+    func applyCirclePresetWide() {
+        patternMode = .circles
+        reset()
+        layer1Spacing = 16.0
+        layer1Thickness = 6.0
+        layer2Spacing = 17.0
+        layer2Thickness = 6.0
     }
 }

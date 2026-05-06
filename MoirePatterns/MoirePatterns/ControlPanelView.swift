@@ -7,6 +7,7 @@ struct ControlPanelView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 headerSection
+                patternModeSection
                 interactionSection
                 Divider()
                 layer1Section
@@ -23,12 +24,31 @@ struct ControlPanelView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Line Moiré")
+            Text("Moiré Patterns")
                 .font(.title2)
                 .fontWeight(.bold)
             Text("Drag on the canvas to move the active layer. Observe how the moiré pattern moves faster than the layer itself.")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Pattern Mode
+
+    private var patternModeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Pattern")
+                .font(.headline)
+
+            Picker("Pattern", selection: $viewModel.patternMode) {
+                ForEach(MoireViewModel.PatternMode.allCases, id: \.self) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: viewModel.patternMode) { _, _ in
+                viewModel.reset()
+            }
         }
     }
 
@@ -45,12 +65,14 @@ struct ControlPanelView: View {
             }
             .pickerStyle(.segmented)
 
-            Picker("Drag Mode", selection: $viewModel.dragMode) {
-                ForEach(MoireViewModel.DragMode.allCases, id: \.self) { mode in
-                    Text(mode.rawValue).tag(mode)
+            if viewModel.patternMode == .lines {
+                Picker("Drag Mode", selection: $viewModel.dragMode) {
+                    ForEach(MoireViewModel.DragMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
                 }
+                .pickerStyle(.segmented)
             }
-            .pickerStyle(.segmented)
         }
     }
 
@@ -81,12 +103,14 @@ struct ControlPanelView: View {
                 format: "%.1f px"
             )
 
-            parameterSlider(
-                label: "Angle",
-                value: $viewModel.layer1Angle,
-                range: -90...90,
-                format: "%.1f°"
-            )
+            if viewModel.patternMode == .lines {
+                parameterSlider(
+                    label: "Angle",
+                    value: $viewModel.layer1Angle,
+                    range: -90...90,
+                    format: "%.1f°"
+                )
+            }
 
             ColorPicker("Color", selection: $viewModel.layer1Color)
         }
@@ -119,12 +143,14 @@ struct ControlPanelView: View {
                 format: "%.1f px"
             )
 
-            parameterSlider(
-                label: "Angle",
-                value: $viewModel.layer2Angle,
-                range: -90...90,
-                format: "%.1f°"
-            )
+            if viewModel.patternMode == .lines {
+                parameterSlider(
+                    label: "Angle",
+                    value: $viewModel.layer2Angle,
+                    range: -90...90,
+                    format: "%.1f°"
+                )
+            }
 
             ColorPicker("Color", selection: $viewModel.layer2Color)
         }
@@ -137,37 +163,61 @@ struct ControlPanelView: View {
             Text("Presets")
                 .font(.headline)
 
-            HStack(spacing: 8) {
-                presetButton("Classic") {
-                    viewModel.reset()
-                }
-                presetButton("Fine") {
-                    viewModel.reset()
-                    viewModel.layer1Spacing = 4.0
-                    viewModel.layer1Thickness = 2.0
-                    viewModel.layer2Spacing = 4.3
-                    viewModel.layer2Thickness = 2.0
-                }
-            }
-
-            HStack(spacing: 8) {
-                presetButton("Angled") {
-                    viewModel.reset()
-                    viewModel.layer2Angle = 5.0
-                }
-                presetButton("Wide") {
-                    viewModel.reset()
-                    viewModel.layer1Spacing = 15.0
-                    viewModel.layer1Thickness = 7.0
-                    viewModel.layer2Spacing = 16.0
-                    viewModel.layer2Thickness = 7.0
-                }
+            switch viewModel.patternMode {
+            case .lines:
+                linePresets
+            case .circles:
+                circlePresets
             }
 
             Button("Reset All") {
                 viewModel.reset()
             }
             .buttonStyle(.bordered)
+        }
+    }
+
+    private var linePresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") {
+                    viewModel.applyLinePresetClassic()
+                }
+                presetButton("Fine") {
+                    viewModel.applyLinePresetFine()
+                }
+            }
+
+            HStack(spacing: 8) {
+                presetButton("Angled") {
+                    viewModel.applyLinePresetAngled()
+                }
+                presetButton("Wide") {
+                    viewModel.applyLinePresetWide()
+                }
+            }
+        }
+    }
+
+    private var circlePresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") {
+                    viewModel.applyCirclePresetClassic()
+                }
+                presetButton("Dense") {
+                    viewModel.applyCirclePresetDense()
+                }
+            }
+
+            HStack(spacing: 8) {
+                presetButton("Offset") {
+                    viewModel.applyCirclePresetOffset()
+                }
+                presetButton("Wide") {
+                    viewModel.applyCirclePresetWide()
+                }
+            }
         }
     }
 
