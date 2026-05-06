@@ -16,6 +16,10 @@ struct ControlPanelView: View {
                     shapeBaseSection
                     Divider()
                     shapeRevealSection
+                } else if viewModel.patternMode == .eye {
+                    eyeBaseSection
+                    Divider()
+                    eyeRevealSection
                 } else {
                     layer1Section
                     Divider()
@@ -301,6 +305,8 @@ struct ControlPanelView: View {
                 checkerPresets
             case .shapeMoire:
                 shapePresets
+            case .eye:
+                eyePresets
             }
 
             Button("Reset All") {
@@ -397,6 +403,70 @@ struct ControlPanelView: View {
             HStack(spacing: 8) {
                 presetButton("Fine") { viewModel.applyShapePresetFine() }
                 presetButton("Large") { viewModel.applyShapePresetLarge() }
+            }
+        }
+    }
+
+    // MARK: - Eye Moiré Sections
+
+    private var eyeBaseSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Eye Layer (Base)")
+                    .font(.headline)
+                Spacer()
+                Toggle("", isOn: $viewModel.showLayer1)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            parameterSlider(
+                label: "Base Period (pb)",
+                value: $viewModel.layer1Spacing,
+                range: 2...20,
+                format: "%.1f px"
+            )
+
+            ColorPicker("Pupil Color", selection: $viewModel.layer1Color)
+        }
+    }
+
+    private var eyeRevealSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Stripe Layer (Overlay)")
+                    .font(.headline)
+                Spacer()
+                Toggle("", isOn: $viewModel.showLayer2)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            parameterSlider(
+                label: "Reveal Period (pr)",
+                value: $viewModel.layer2Spacing,
+                range: 2...20,
+                format: "%.1f px"
+            )
+
+            parameterSlider(
+                label: "Slit Width",
+                value: $viewModel.layer2Thickness,
+                range: 0.3...5,
+                format: "%.1f px"
+            )
+        }
+    }
+
+    private var eyePresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") { viewModel.applyEyePresetClassic() }
+                presetButton("Fine") { viewModel.applyEyePresetFine() }
+            }
+            HStack(spacing: 8) {
+                presetButton("Wide") { viewModel.applyEyePresetWide() }
+                presetButton("Slow") { viewModel.applyEyePresetSlow() }
             }
         }
     }
