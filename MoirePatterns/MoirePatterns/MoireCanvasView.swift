@@ -122,13 +122,10 @@ struct LinePatternLayer: View {
             let lineCount = Int(diagonal / totalSpacing) + 2
 
             // Apply transformations
-            var transform = CGAffineTransform.identity
-            transform = transform.translatedBy(x: size.width / 2, y: size.height / 2)
-            transform = transform.rotatedBy(angle: angle * .pi / 180)
-            transform = transform.translatedBy(x: offset.width, y: offset.height)
-            transform = transform.translatedBy(x: -size.width / 2, y: -size.height / 2)
-
-            context.transform = transform
+            context.translateBy(x: size.width / 2, y: size.height / 2)
+            context.rotate(by: .degrees(angle))
+            context.translateBy(x: offset.width, y: offset.height)
+            context.translateBy(x: -size.width / 2, y: -size.height / 2)
 
             // Draw lines centered on the canvas
             let startX = (size.width - diagonal) / 2
