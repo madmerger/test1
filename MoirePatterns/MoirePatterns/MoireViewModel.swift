@@ -40,6 +40,7 @@ class MoireViewModel: ObservableObject {
         case dots = "Dots"
         case checkerboard = "Checker"
         case shapeMoire = "Shape"
+        case eye = "Eye"
     }
 
     enum DragMode: String, CaseIterable {
@@ -51,7 +52,7 @@ class MoireViewModel: ObservableObject {
         switch patternMode {
         case .lines, .grid, .dots, .checkerboard:
             return true
-        case .circles, .radial, .shapeMoire:
+        case .circles, .radial, .shapeMoire, .eye:
             return false
         }
     }
@@ -100,6 +101,11 @@ class MoireViewModel: ObservableObject {
             layer2Spacing = 6.5
             layer2Thickness = 1.0
             shapeFontSize = 80.0
+        case .eye:
+            layer1Spacing = 6.0
+            layer1Thickness = 3.0
+            layer2Spacing = 6.5
+            layer2Thickness = 1.0
         }
     }
 
@@ -324,5 +330,36 @@ class MoireViewModel: ObservableObject {
         layer2Spacing = 8.5
         layer2Thickness = 1.5
         shapeFontSize = 120.0
+    }
+
+    // MARK: - Eye Presets
+
+    func applyEyePresetClassic() {
+        patternMode = .eye
+        reset()
+    }
+
+    func applyEyePresetFine() {
+        patternMode = .eye
+        reset()
+        layer1Spacing = 4.0
+        layer2Spacing = 4.3
+        layer2Thickness = 0.8
+    }
+
+    func applyEyePresetWide() {
+        patternMode = .eye
+        reset()
+        layer1Spacing = 10.0
+        layer2Spacing = 10.5
+        layer2Thickness = 2.0
+    }
+
+    func applyEyePresetSlow() {
+        patternMode = .eye
+        reset()
+        layer1Spacing = 6.0
+        layer2Spacing = 6.1
+        layer2Thickness = 1.0
     }
 }

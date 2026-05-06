@@ -16,8 +16,8 @@ struct MoireCanvasView: View {
             ZStack {
                 Color(nsColor: .windowBackgroundColor)
 
-                if viewModel.patternMode == .shapeMoire {
-                    shapeMoireContent(sheetSize: sheetSize)
+                if viewModel.patternMode == .shapeMoire || viewModel.patternMode == .eye {
+                    specialModeContent(sheetSize: sheetSize)
                 } else {
                     if viewModel.showLayer1 {
                         sheetView(borderColor: .blue) {
@@ -72,17 +72,28 @@ struct MoireCanvasView: View {
     }
 
     @ViewBuilder
-    private func shapeMoireContent(sheetSize: CGSize) -> some View {
+    private func specialModeContent(sheetSize: CGSize) -> some View {
         if viewModel.showLayer1 {
             sheetView(borderColor: .blue) {
-                ShapeBaseLayer(
-                    text: viewModel.shapeText,
-                    basePeriod: viewModel.layer1Spacing,
-                    fontSize: viewModel.shapeFontSize,
-                    offset: .zero,
-                    color: viewModel.layer1Color,
-                    canvasSize: sheetSize
-                )
+                switch viewModel.patternMode {
+                case .shapeMoire:
+                    ShapeBaseLayer(
+                        text: viewModel.shapeText,
+                        basePeriod: viewModel.layer1Spacing,
+                        fontSize: viewModel.shapeFontSize,
+                        offset: .zero,
+                        color: viewModel.layer1Color,
+                        canvasSize: sheetSize
+                    )
+                case .eye:
+                    EyeBaseLayer(
+                        basePeriod: viewModel.layer1Spacing,
+                        color: viewModel.layer1Color,
+                        canvasSize: sheetSize
+                    )
+                default:
+                    EmptyView()
+                }
             }
             .frame(width: sheetSize.width, height: sheetSize.height)
             .offset(viewModel.layer1Offset)
@@ -90,12 +101,23 @@ struct MoireCanvasView: View {
 
         if viewModel.showLayer2 {
             sheetView(borderColor: .red) {
-                ShapeRevealLayer(
-                    revealPeriod: viewModel.layer2Spacing,
-                    slitWidth: viewModel.layer2Thickness,
-                    offset: .zero,
-                    canvasSize: sheetSize
-                )
+                switch viewModel.patternMode {
+                case .shapeMoire:
+                    ShapeRevealLayer(
+                        revealPeriod: viewModel.layer2Spacing,
+                        slitWidth: viewModel.layer2Thickness,
+                        offset: .zero,
+                        canvasSize: sheetSize
+                    )
+                case .eye:
+                    EyeRevealLayer(
+                        revealPeriod: viewModel.layer2Spacing,
+                        slitWidth: viewModel.layer2Thickness,
+                        canvasSize: sheetSize
+                    )
+                default:
+                    EmptyView()
+                }
             }
             .frame(width: sheetSize.width, height: sheetSize.height)
             .offset(viewModel.layer2Offset)
@@ -164,7 +186,7 @@ struct MoireCanvasView: View {
                 color: color,
                 canvasSize: canvasSize
             )
-        case .shapeMoire:
+        case .shapeMoire, .eye:
             EmptyView()
         }
     }
@@ -541,6 +563,102 @@ struct ShapeRevealLayer: View {
                 let slitTop = Double(i) * revealPeriod + yMod
                 let bandTop = slitTop + slitWidth
                 let rect = CGRect(x: 0, y: bandTop, width: size.width, height: bandHeight)
+                context.fill(Path(rect), with: .color(.black))
+            }
+        }
+    }
+}
+
+// MARK: - Eye Base Layer
+
+struct EyeBaseLayer: View {
+    let basePeriod: Double
+    let color: Color
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            guard basePeriod > 0 else { return }
+
+            let eyeRadius = min(size.width * 0.22, size.height * 0.35)
+            let pupilRadius = eyeRadius * 0.4
+            let irisRadius = eyeRadius * 0.7
+            let leftCenter = CGPoint(x: size.width * 0.33, y: size.height * 0.5)
+            let rightCenter = CGPoint(x: size.width * 0.67, y: size.height * 0.5)
+
+            drawEye(context: context, center: leftCenter, eyeRadius: eyeRadius, irisRadius: irisRadius, pupilRadius: pupilRadius, size: size)
+            drawEye(context: context, center: rightCenter, eyeRadius: eyeRadius, irisRadius: irisRadius, pupilRadius: pupilRadius, size: size)
+        }
+    }
+
+    private func drawEye(context: GraphicsContext, center: CGPoint, eyeRadius: Double, irisRadius: Double, pupilRadius: Double, size: CGSize) {
+        let eyeRect = CGRect(
+            x: center.x - eyeRadius,
+            y: center.y - eyeRadius,
+            width: eyeRadius * 2,
+            height: eyeRadius * 2
+        )
+        let eyePath = Path(ellipseIn: eyeRect)
+
+        // Draw white eye background
+        context.fill(eyePath, with: .color(.white))
+
+        // Draw iris ring
+        let irisRect = CGRect(
+            x: center.x - irisRadius,
+            y: center.y - irisRadius,
+            width: irisRadius * 2,
+            height: irisRadius * 2
+        )
+        context.stroke(Path(ellipseIn: irisRect), with: .color(.brown), lineWidth: 3)
+
+        // Draw compressed, tiled pupils inside the eye using clipping
+        var clippedContext = context
+        clippedContext.clip(to: eyePath)
+
+        let compressionRatio = basePeriod / (pupilRadius * 2)
+        let tileCount = Int(eyeRadius * 2 / basePeriod) + 2
+        let startX = center.x - eyeRadius
+
+        for i in 0..<tileCount {
+            let tileX = startX + Double(i) * basePeriod + basePeriod / 2
+
+            var ctx = clippedContext
+            ctx.translateBy(x: tileX, y: center.y)
+            ctx.scaleBy(x: compressionRatio, y: 1.0)
+
+            let pupilRect = CGRect(
+                x: -pupilRadius,
+                y: -pupilRadius,
+                width: pupilRadius * 2,
+                height: pupilRadius * 2
+            )
+            ctx.fill(Path(ellipseIn: pupilRect), with: .color(color))
+        }
+
+        // Draw eye outline
+        context.stroke(eyePath, with: .color(.gray), lineWidth: 2)
+    }
+}
+
+// MARK: - Eye Reveal Layer
+
+struct EyeRevealLayer: View {
+    let revealPeriod: Double
+    let slitWidth: Double
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            guard revealPeriod > 0, slitWidth > 0, slitWidth < revealPeriod else { return }
+
+            let bandWidth = revealPeriod - slitWidth
+            let bandCount = Int(size.width / revealPeriod) + 3
+
+            for i in -1..<bandCount {
+                let slitLeft = Double(i) * revealPeriod
+                let bandLeft = slitLeft + slitWidth
+                let rect = CGRect(x: bandLeft, y: 0, width: bandWidth, height: size.height)
                 context.fill(Path(rect), with: .color(.black))
             }
         }
