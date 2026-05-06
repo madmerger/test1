@@ -17,6 +17,10 @@ class MoireViewModel: ObservableObject {
     @Published var layer2Angle: Double = 0.0
     @Published var layer2Offset: CGSize = .zero
 
+    // Shape Moiré specific
+    @Published var shapeText: String = "Hello"
+    @Published var shapeFontSize: Double = 80.0
+
     // Display options
     @Published var layer1Color: Color = .black
     @Published var layer2Color: Color = .black
@@ -35,6 +39,7 @@ class MoireViewModel: ObservableObject {
         case radial = "Radial"
         case dots = "Dots"
         case checkerboard = "Checker"
+        case shapeMoire = "Shape"
     }
 
     enum DragMode: String, CaseIterable {
@@ -46,7 +51,7 @@ class MoireViewModel: ObservableObject {
         switch patternMode {
         case .lines, .grid, .dots, .checkerboard:
             return true
-        case .circles, .radial:
+        case .circles, .radial, .shapeMoire:
             return false
         }
     }
@@ -89,6 +94,12 @@ class MoireViewModel: ObservableObject {
             layer1Thickness = 10.0
             layer2Spacing = 10.5
             layer2Thickness = 10.5
+        case .shapeMoire:
+            layer1Spacing = 6.0
+            layer1Thickness = 3.0
+            layer2Spacing = 6.5
+            layer2Thickness = 1.0
+            shapeFontSize = 80.0
         }
     }
 
@@ -278,5 +289,40 @@ class MoireViewModel: ObservableObject {
         layer1Thickness = 20.0
         layer2Spacing = 21.0
         layer2Thickness = 21.0
+    }
+
+    // MARK: - Shape Moiré Presets
+
+    func applyShapePresetClassic() {
+        patternMode = .shapeMoire
+        reset()
+        shapeText = "Hello"
+    }
+
+    func applyShapePresetKanji() {
+        patternMode = .shapeMoire
+        reset()
+        shapeText = "モアレ"
+        shapeFontSize = 100.0
+    }
+
+    func applyShapePresetFine() {
+        patternMode = .shapeMoire
+        reset()
+        shapeText = "Moiré"
+        layer1Spacing = 4.0
+        layer2Spacing = 4.3
+        layer2Thickness = 0.8
+        shapeFontSize = 60.0
+    }
+
+    func applyShapePresetLarge() {
+        patternMode = .shapeMoire
+        reset()
+        shapeText = "ABC"
+        layer1Spacing = 8.0
+        layer2Spacing = 8.5
+        layer2Thickness = 1.5
+        shapeFontSize = 120.0
     }
 }
