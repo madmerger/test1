@@ -132,6 +132,7 @@ struct MoireCanvasView: View {
             )
         case .shapeMoire:
             EmptyView()
+        }
     }
 
     private var dragGesture: some Gesture {
