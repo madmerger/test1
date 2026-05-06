@@ -9,27 +9,31 @@ struct MoireCanvasView: View {
             ZStack {
                 viewModel.backgroundColor
 
-                if viewModel.showLayer1 {
-                    patternLayer(
-                        spacing: viewModel.layer1Spacing,
-                        thickness: viewModel.layer1Thickness,
-                        angle: viewModel.layer1Angle,
-                        offset: viewModel.layer1Offset,
-                        color: viewModel.layer1Color,
-                        canvasSize: geometry.size
-                    )
-                }
+                if viewModel.patternMode == .shapeMoire {
+                    shapeMoireContent(canvasSize: geometry.size)
+                } else {
+                    if viewModel.showLayer1 {
+                        patternLayer(
+                            spacing: viewModel.layer1Spacing,
+                            thickness: viewModel.layer1Thickness,
+                            angle: viewModel.layer1Angle,
+                            offset: viewModel.layer1Offset,
+                            color: viewModel.layer1Color,
+                            canvasSize: geometry.size
+                        )
+                    }
 
-                if viewModel.showLayer2 {
-                    patternLayer(
-                        spacing: viewModel.layer2Spacing,
-                        thickness: viewModel.layer2Thickness,
-                        angle: viewModel.layer2Angle,
-                        offset: viewModel.layer2Offset,
-                        color: viewModel.layer2Color,
-                        canvasSize: geometry.size
-                    )
-                    .blendMode(.darken)
+                    if viewModel.showLayer2 {
+                        patternLayer(
+                            spacing: viewModel.layer2Spacing,
+                            thickness: viewModel.layer2Thickness,
+                            angle: viewModel.layer2Angle,
+                            offset: viewModel.layer2Offset,
+                            color: viewModel.layer2Color,
+                            canvasSize: geometry.size
+                        )
+                        .blendMode(.darken)
+                    }
                 }
             }
             .clipped()
@@ -38,6 +42,30 @@ struct MoireCanvasView: View {
                 layerIndicator
                     .padding(8)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func shapeMoireContent(canvasSize: CGSize) -> some View {
+        if viewModel.showLayer1 {
+            ShapeBaseLayer(
+                text: viewModel.shapeText,
+                basePeriod: viewModel.layer1Spacing,
+                fontSize: viewModel.shapeFontSize,
+                offset: viewModel.layer1Offset,
+                color: viewModel.layer1Color,
+                canvasSize: canvasSize
+            )
+        }
+
+        if viewModel.showLayer2 {
+            ShapeRevealLayer(
+                revealPeriod: viewModel.layer2Spacing,
+                slitWidth: viewModel.layer2Thickness,
+                offset: viewModel.layer2Offset,
+                canvasSize: canvasSize
+            )
+            .blendMode(.darken)
         }
     }
 
@@ -102,7 +130,8 @@ struct MoireCanvasView: View {
                 color: color,
                 canvasSize: canvasSize
             )
-        }
+        case .shapeMoire:
+            EmptyView()
     }
 
     private var dragGesture: some Gesture {
@@ -417,6 +446,67 @@ struct CheckerboardPatternLayer: View {
                     let rect = CGRect(x: x, y: y, width: cellSize, height: cellSize)
                     context.fill(Path(rect), with: .color(color))
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Shape Moiré Base Layer
+
+struct ShapeBaseLayer: View {
+    let text: String
+    let basePeriod: Double
+    let fontSize: Double
+    let offset: CGSize
+    let color: Color
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            guard basePeriod > 0, !text.isEmpty else { return }
+
+            let font = Font.system(size: fontSize, weight: .bold)
+            let resolved = context.resolve(Text(text).font(font).foregroundColor(color))
+            let textSize = resolved.measure(in: CGSize(width: size.width * 2, height: .infinity))
+
+            guard textSize.height > 0 else { return }
+
+            let compressionRatio = basePeriod / textSize.height
+            let tileCount = Int(size.height / basePeriod) + 3
+            let yMod = offset.height.truncatingRemainder(dividingBy: basePeriod)
+
+            for i in -1..<tileCount {
+                var ctx = context
+                let tileY = Double(i) * basePeriod + yMod
+                ctx.translateBy(x: size.width / 2 + offset.width, y: tileY)
+                ctx.scaleBy(x: 1.0, y: compressionRatio)
+                ctx.draw(resolved, at: CGPoint(x: 0, y: 0), anchor: .top)
+            }
+        }
+    }
+}
+
+// MARK: - Shape Moiré Reveal Layer
+
+struct ShapeRevealLayer: View {
+    let revealPeriod: Double
+    let slitWidth: Double
+    let offset: CGSize
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            guard revealPeriod > 0, slitWidth > 0, slitWidth < revealPeriod else { return }
+
+            let bandHeight = revealPeriod - slitWidth
+            let bandCount = Int(size.height / revealPeriod) + 3
+            let yMod = offset.height.truncatingRemainder(dividingBy: revealPeriod)
+
+            for i in -1..<bandCount {
+                let slitTop = Double(i) * revealPeriod + yMod
+                let bandTop = slitTop + slitWidth
+                let rect = CGRect(x: 0, y: bandTop, width: size.width, height: bandHeight)
+                context.fill(Path(rect), with: .color(.black))
             }
         }
     }

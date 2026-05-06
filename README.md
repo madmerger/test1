@@ -16,10 +16,11 @@ Moiré patterns appear when superposing two transparent layers containing correl
 | **Radial** | Rays radiating from a center point (sunburst) |
 | **Dots** | Regular grid of filled circles |
 | **Checkerboard** | Alternating filled squares |
+| **Shape** | Shape moiré — compressed text revealed through a horizontal grating ([Wikipedia](https://en.wikipedia.org/wiki/Shape_moir%C3%A9)) |
 
 ## Features
 
-- **Six Pattern Modes** with mode-specific controls and presets
+- **Seven Pattern Modes** with mode-specific controls and presets
 - **Interactive Canvas**: Drag to move the active layer and observe moiré pattern formation in real-time
 - **Dual Layer Control**: Independently configure each layer's parameters
 - **Drag Modes**: Switch between translation and rotation (for patterns that support angle)
@@ -50,8 +51,12 @@ Moiré patterns appear when superposing two transparent layers containing correl
 
 - **MoirePatternsApp.swift** — App entry point
 - **ContentView.swift** — Main split view layout
-- **MoireCanvasView.swift** — Canvas rendering with pattern layers (`LinePatternLayer`, `CirclePatternLayer`, `GridPatternLayer`, `RadialPatternLayer`, `DotPatternLayer`, `CheckerboardPatternLayer`) and drag gesture handling
+- **MoireCanvasView.swift** — Canvas rendering with pattern layers (`LinePatternLayer`, `CirclePatternLayer`, `GridPatternLayer`, `RadialPatternLayer`, `DotPatternLayer`, `CheckerboardPatternLayer`, `ShapeBaseLayer`, `ShapeRevealLayer`) and drag gesture handling
 - **ControlPanelView.swift** — Parameter controls, pattern mode picker, and presets
 - **MoireViewModel.swift** — Shared state management via `ObservableObject`
 
 Patterns are rendered using SwiftUI's `Canvas` view for efficient drawing. The overlay uses `.blendMode(.darken)` to simulate transparent superposition.
+
+### Shape Moiré
+
+Shape moiré demonstrates **moiré magnification**. A base layer contains user-specified text compressed vertically and tiled at period *pb*. A revealing layer (horizontal grating with thin transparent slits at period *pr*) is overlaid with darken blend mode. When *pr ≈ pb*, the moiré effect reconstructs the text at readable proportions. Dragging the reveal layer vertically causes the text to scroll at magnified speed. Enter any text string — including CJK characters — in the control panel.

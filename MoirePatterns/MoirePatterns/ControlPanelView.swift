@@ -10,9 +10,17 @@ struct ControlPanelView: View {
                 patternModeSection
                 interactionSection
                 Divider()
-                layer1Section
-                Divider()
-                layer2Section
+                if viewModel.patternMode == .shapeMoire {
+                    shapeTextSection
+                    Divider()
+                    shapeBaseSection
+                    Divider()
+                    shapeRevealSection
+                } else {
+                    layer1Section
+                    Divider()
+                    layer2Section
+                }
                 Divider()
                 presetsSection
                 Spacer()
@@ -201,7 +209,74 @@ struct ControlPanelView: View {
     }
 
     private var showsThickness: Bool {
-        viewModel.patternMode != .checkerboard
+        viewModel.patternMode != .checkerboard && viewModel.patternMode != .shapeMoire
+    }
+
+    // MARK: - Shape Moiré Sections
+
+    private var shapeTextSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Text")
+                .font(.headline)
+            TextField("Enter text", text: $viewModel.shapeText)
+                .textFieldStyle(.roundedBorder)
+
+            parameterSlider(
+                label: "Font Size",
+                value: $viewModel.shapeFontSize,
+                range: 20...200,
+                format: "%.0f pt"
+            )
+        }
+    }
+
+    private var shapeBaseSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Base Layer")
+                    .font(.headline)
+                Spacer()
+                Toggle("", isOn: $viewModel.showLayer1)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            parameterSlider(
+                label: "Base Period (pb)",
+                value: $viewModel.layer1Spacing,
+                range: 2...20,
+                format: "%.1f px"
+            )
+
+            ColorPicker("Color", selection: $viewModel.layer1Color)
+        }
+    }
+
+    private var shapeRevealSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Reveal Layer")
+                    .font(.headline)
+                Spacer()
+                Toggle("", isOn: $viewModel.showLayer2)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            parameterSlider(
+                label: "Reveal Period (pr)",
+                value: $viewModel.layer2Spacing,
+                range: 2...20,
+                format: "%.1f px"
+            )
+
+            parameterSlider(
+                label: "Slit Width",
+                value: $viewModel.layer2Thickness,
+                range: 0.3...5,
+                format: "%.1f px"
+            )
+        }
     }
 
     // MARK: - Presets
@@ -224,6 +299,8 @@ struct ControlPanelView: View {
                 dotPresets
             case .checkerboard:
                 checkerPresets
+            case .shapeMoire:
+                shapePresets
             }
 
             Button("Reset All") {
@@ -307,6 +384,19 @@ struct ControlPanelView: View {
             HStack(spacing: 8) {
                 presetButton("Angled") { viewModel.applyCheckerPresetAngled() }
                 presetButton("Large") { viewModel.applyCheckerPresetLarge() }
+            }
+        }
+    }
+
+    private var shapePresets: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                presetButton("Classic") { viewModel.applyShapePresetClassic() }
+                presetButton("カタカナ") { viewModel.applyShapePresetKanji() }
+            }
+            HStack(spacing: 8) {
+                presetButton("Fine") { viewModel.applyShapePresetFine() }
+                presetButton("Large") { viewModel.applyShapePresetLarge() }
             }
         }
     }
