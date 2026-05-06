@@ -4,34 +4,49 @@ struct MoireCanvasView: View {
     @ObservedObject var viewModel: MoireViewModel
     @State private var dragStart: CGSize = .zero
 
+    private let sheetInset: CGFloat = 30
+
     var body: some View {
         GeometryReader { geometry in
+            let sheetSize = CGSize(
+                width: max(geometry.size.width - sheetInset * 2, 0),
+                height: max(geometry.size.height - sheetInset * 2, 0)
+            )
+
             ZStack {
-                viewModel.backgroundColor
+                Color(nsColor: .windowBackgroundColor)
 
                 if viewModel.patternMode == .shapeMoire {
-                    shapeMoireContent(canvasSize: geometry.size)
+                    shapeMoireContent(sheetSize: sheetSize)
                 } else {
                     if viewModel.showLayer1 {
-                        patternLayer(
-                            spacing: viewModel.layer1Spacing,
-                            thickness: viewModel.layer1Thickness,
-                            angle: viewModel.layer1Angle,
-                            offset: viewModel.layer1Offset,
-                            color: viewModel.layer1Color,
-                            canvasSize: geometry.size
-                        )
+                        sheetView(borderColor: .blue) {
+                            patternLayer(
+                                spacing: viewModel.layer1Spacing,
+                                thickness: viewModel.layer1Thickness,
+                                angle: viewModel.layer1Angle,
+                                offset: .zero,
+                                color: viewModel.layer1Color,
+                                canvasSize: sheetSize
+                            )
+                        }
+                        .frame(width: sheetSize.width, height: sheetSize.height)
+                        .offset(viewModel.layer1Offset)
                     }
 
                     if viewModel.showLayer2 {
-                        patternLayer(
-                            spacing: viewModel.layer2Spacing,
-                            thickness: viewModel.layer2Thickness,
-                            angle: viewModel.layer2Angle,
-                            offset: viewModel.layer2Offset,
-                            color: viewModel.layer2Color,
-                            canvasSize: geometry.size
-                        )
+                        sheetView(borderColor: .red) {
+                            patternLayer(
+                                spacing: viewModel.layer2Spacing,
+                                thickness: viewModel.layer2Thickness,
+                                angle: viewModel.layer2Angle,
+                                offset: .zero,
+                                color: viewModel.layer2Color,
+                                canvasSize: sheetSize
+                            )
+                        }
+                        .frame(width: sheetSize.width, height: sheetSize.height)
+                        .offset(viewModel.layer2Offset)
                         .blendMode(.darken)
                     }
                 }
@@ -45,26 +60,45 @@ struct MoireCanvasView: View {
         }
     }
 
+    private func sheetView<Content: View>(
+        borderColor: Color,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .background(viewModel.backgroundColor)
+            .clipShape(Rectangle())
+            .overlay(Rectangle().stroke(borderColor.opacity(0.4), lineWidth: 1.5))
+            .shadow(color: .black.opacity(0.12), radius: 4, x: 2, y: 2)
+    }
+
     @ViewBuilder
-    private func shapeMoireContent(canvasSize: CGSize) -> some View {
+    private func shapeMoireContent(sheetSize: CGSize) -> some View {
         if viewModel.showLayer1 {
-            ShapeBaseLayer(
-                text: viewModel.shapeText,
-                basePeriod: viewModel.layer1Spacing,
-                fontSize: viewModel.shapeFontSize,
-                offset: viewModel.layer1Offset,
-                color: viewModel.layer1Color,
-                canvasSize: canvasSize
-            )
+            sheetView(borderColor: .blue) {
+                ShapeBaseLayer(
+                    text: viewModel.shapeText,
+                    basePeriod: viewModel.layer1Spacing,
+                    fontSize: viewModel.shapeFontSize,
+                    offset: .zero,
+                    color: viewModel.layer1Color,
+                    canvasSize: sheetSize
+                )
+            }
+            .frame(width: sheetSize.width, height: sheetSize.height)
+            .offset(viewModel.layer1Offset)
         }
 
         if viewModel.showLayer2 {
-            ShapeRevealLayer(
-                revealPeriod: viewModel.layer2Spacing,
-                slitWidth: viewModel.layer2Thickness,
-                offset: viewModel.layer2Offset,
-                canvasSize: canvasSize
-            )
+            sheetView(borderColor: .red) {
+                ShapeRevealLayer(
+                    revealPeriod: viewModel.layer2Spacing,
+                    slitWidth: viewModel.layer2Thickness,
+                    offset: .zero,
+                    canvasSize: sheetSize
+                )
+            }
+            .frame(width: sheetSize.width, height: sheetSize.height)
+            .offset(viewModel.layer2Offset)
             .blendMode(.darken)
         }
     }
