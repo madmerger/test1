@@ -10,7 +10,7 @@ struct MoireCanvasView: View {
                 viewModel.backgroundColor
 
                 if viewModel.showLayer1 {
-                    LinePatternLayer(
+                    patternLayer(
                         spacing: viewModel.layer1Spacing,
                         thickness: viewModel.layer1Thickness,
                         angle: viewModel.layer1Angle,
@@ -21,7 +21,7 @@ struct MoireCanvasView: View {
                 }
 
                 if viewModel.showLayer2 {
-                    LinePatternLayer(
+                    patternLayer(
                         spacing: viewModel.layer2Spacing,
                         thickness: viewModel.layer2Thickness,
                         angle: viewModel.layer2Angle,
@@ -38,6 +38,36 @@ struct MoireCanvasView: View {
                 layerIndicator
                     .padding(8)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func patternLayer(
+        spacing: Double,
+        thickness: Double,
+        angle: Double,
+        offset: CGSize,
+        color: Color,
+        canvasSize: CGSize
+    ) -> some View {
+        switch viewModel.patternMode {
+        case .lines:
+            LinePatternLayer(
+                spacing: spacing,
+                thickness: thickness,
+                angle: angle,
+                offset: offset,
+                color: color,
+                canvasSize: canvasSize
+            )
+        case .circles:
+            CirclePatternLayer(
+                spacing: spacing,
+                thickness: thickness,
+                offset: offset,
+                color: color,
+                canvasSize: canvasSize
+            )
         }
     }
 
@@ -104,6 +134,8 @@ struct MoireCanvasView: View {
     }
 }
 
+// MARK: - Line Pattern
+
 struct LinePatternLayer: View {
     let spacing: Double
     let thickness: Double
@@ -117,17 +149,14 @@ struct LinePatternLayer: View {
             let totalSpacing = spacing + thickness
             guard totalSpacing > 0 else { return }
 
-            // Calculate the diagonal to ensure full coverage when rotated
             let diagonal = sqrt(size.width * size.width + size.height * size.height)
             let lineCount = Int(diagonal / totalSpacing) + 2
 
-            // Apply transformations
             context.translateBy(x: size.width / 2, y: size.height / 2)
             context.rotate(by: .degrees(angle))
             context.translateBy(x: offset.width, y: offset.height)
             context.translateBy(x: -size.width / 2, y: -size.height / 2)
 
-            // Draw lines centered on the canvas
             let startX = (size.width - diagonal) / 2
             let startY = (size.height - diagonal) / 2
 
@@ -140,6 +169,53 @@ struct LinePatternLayer: View {
                     height: diagonal
                 )
                 context.fill(Path(rect), with: .color(color))
+            }
+        }
+    }
+}
+
+// MARK: - Circle Pattern
+
+struct CirclePatternLayer: View {
+    let spacing: Double
+    let thickness: Double
+    let offset: CGSize
+    let color: Color
+    let canvasSize: CGSize
+
+    var body: some View {
+        Canvas { context, size in
+            let totalSpacing = spacing + thickness
+            guard totalSpacing > 0 else { return }
+
+            let centerX = size.width / 2 + offset.width
+            let centerY = size.height / 2 + offset.height
+
+            let diagonal = sqrt(size.width * size.width + size.height * size.height)
+            let maxRadius = diagonal
+            let ringCount = Int(maxRadius / totalSpacing) + 1
+
+            for i in 0..<ringCount {
+                let outerRadius = Double(i + 1) * totalSpacing
+                let innerRadius = outerRadius - thickness
+                guard innerRadius >= 0 else { continue }
+
+                var path = Path()
+                path.addArc(
+                    center: CGPoint(x: centerX, y: centerY),
+                    radius: outerRadius,
+                    startAngle: .zero,
+                    endAngle: .degrees(360),
+                    clockwise: false
+                )
+                path.addArc(
+                    center: CGPoint(x: centerX, y: centerY),
+                    radius: innerRadius,
+                    startAngle: .zero,
+                    endAngle: .degrees(360),
+                    clockwise: true
+                )
+                context.fill(path, with: .color(color))
             }
         }
     }
